@@ -38,6 +38,19 @@ return [
     'newsapi' => [
         'url' => env('NEWSAPI_URL'),
         'key' => env('NEWSAPI_KEY'),
-    ]
+    ],
+
+    'guardianapi' => [
+        'url' => env('GUARDIANAPI_URL'),
+        'key' => env('GUARDIANAPI_KEY'),
+    ],
+
+    'nytimesapi' => [
+        'url' => env('NYTIMESAPI_URL'),
+        'key' => env('NYTIMESAPI_KEY'),
+        'secret' => env('NYTIMESAPI_SECRET'),
+    ],
+
+    // vR2KyOgAKpanVGopE2MQAz4z71yRbDKidO0LIcKJIupdSvii
 
 ];
