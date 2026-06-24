@@ -23,7 +23,11 @@ class NewsAggregatorProvider extends ServiceProvider
         ], NewsProviderInterface::class);
 
         $this->app->singleton(NewsAggregatorService::class, function ($app) {
-            return new NewsAggregatorService($app->tagged(NewsProviderInterface::class));
+            return new NewsAggregatorService(
+                $app->tagged(NewsProviderInterface::class),
+                $app->make(\App\Contracts\ArticleRepositoryInterface::class),
+                $app->make(\App\Contracts\CategroyRepositoryInterface::class),
+            );
         });
     }
 

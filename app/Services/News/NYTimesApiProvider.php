@@ -66,7 +66,8 @@ class NYTimesApiProvider implements NewsProviderInterface {
                     ? 'https://www.nytimes.com/' . $article['multimedia'][0]['url']
                     : null,
                 source: $article['source'] ?? 'The New York Times',
-                publishedAt: $article['pub_date'] ?? ''
+                publishedAt: $article['pub_date'] ?? '',
+                category: $article['section_name'] ?? null,
             ))
             ->all();
     }

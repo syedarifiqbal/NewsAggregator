@@ -54,11 +54,12 @@ class GuardianApiProvider implements NewsProviderInterface{
         )
             ->map(fn ($article) => new ArticleDTO(
                 title: $article['webTitle'] ?? '',
-                description: $article['sectionName'] ?? null,
+                description: null,
                 url: $article['webUrl'] ?? '',
                 image: null,
                 source: 'The Guardian',
-                publishedAt: $article['webPublicationDate'] ?? ''
+                publishedAt: $article['webPublicationDate'] ?? '',
+                category: $article['sectionName'] ?? null,
             ))
             ->all();
     }
