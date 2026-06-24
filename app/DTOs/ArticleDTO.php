@@ -10,6 +10,7 @@ class ArticleDTO
         public readonly string $url,
         public readonly ?string $image,
         public readonly string $source,
-        public readonly string $publishedAt
+        public readonly string $publishedAt,
+        public readonly ?string $category = null
     ) { }
 }
