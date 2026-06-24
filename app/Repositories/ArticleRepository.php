@@ -12,6 +12,24 @@ use Spatie\QueryBuilder\QueryBuilder;
 class ArticleRepository implements ArticleRepositoryInterface
 {
     public function __construct(private Article $model) {}
+
+    public function index(): LengthAwarePaginator
+    {
+        return QueryBuilder::for(Article::class)
+            ->allowedFilters(
+                AllowedFilter::scope('title', 'titleSearch'),
+                AllowedFilter::exact('source'),
+                AllowedFilter::exact('provider'),
+                AllowedFilter::scope('category', 'categorySearch'),
+                AllowedFilter::scope('published_from'),
+                AllowedFilter::scope('published_to'),
+            )
+            ->allowedSorts('published_at', 'title')
+            ->defaultSort('-published_at')
+            ->with('category:id,name')
+            ->paginate();
+    }
+
     public function updateOrCreate(ArticleDTO $dto, string $provider, ?int $categoryId): Article
     {
         return $this->model->updateOrCreate(

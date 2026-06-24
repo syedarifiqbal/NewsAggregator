@@ -1,6 +1,6 @@
 # News Aggregator
 
-A Laravel application with a Dockerized development environment.
+A Laravel-based news aggregation application that pulls articles from multiple news providers (NewsAPI, The Guardian, NY Times), stores them in a unified format, and exposes a filterable, paginated REST API.
 
 ## Prerequisites
 
@@ -27,20 +27,170 @@ Or if you have `make` installed:
 make setup
 ```
 
+### API Keys
+
+Register for free API keys at:
+
+- **NewsAPI** — https://newsapi.org/register
+- **The Guardian** — https://open-platform.theguardian.com/access
+- **NY Times** — https://developer.nytimes.com/accounts/create
+
+Add them to your `.env` file:
+
+| Variable | Description |
+|---|---|
+| `NEWSAPI_KEY` | Your NewsAPI.org API key |
+| `GUARDIAN_KEY` | Your Guardian Open Platform API key |
+| `NYTIMESAPI_KEY` | Your NY Times Article Search API key |
+
 ### Start / Stop
 
 ```bash
-docker compose up -d
-docker compose down
+docker compose up -d     # start
+docker compose down      # stop
 ```
 
-## Services
+## Docker Services
 
-| Service    | Host URL / Port          |
-|------------|--------------------------|
-| App        | http://localhost:8088     |
-| PostgreSQL | localhost:5442           |
-| Redis      | localhost:6389           |
+| Service    | Host URL / Port      |
+|------------|----------------------|
+| App (Nginx)| http://localhost:8088 |
+| PostgreSQL | localhost:5442       |
+| Redis      | localhost:6389       |
+
+Ports are non-default to avoid conflicts with other local projects.
+
+## API Documentation
+
+Swagger UI is available at: **http://localhost:8088/api/docs**
+
+Regenerate docs after changes:
+
+```bash
+docker compose exec app php artisan l5-swagger:generate
+```
+
+## API Endpoints
+
+### `GET /api/news`
+
+Returns a paginated list of articles with filtering, sorting, and rate limiting (60 requests/minute).
+
+#### Filtering
+
+| Parameter | Type | Description |
+|---|---|---|
+| `filter[title]` | string | Case-insensitive partial match on article title |
+| `filter[source]` | string | Exact match on source name (e.g. `The Guardian`) |
+| `filter[provider]` | string | Exact match on provider (`NewsAPI`, `theGuardian`, `NYTimes`) |
+| `filter[category]` | string | Case-insensitive partial match on category slug |
+| `filter[published_from]` | date | Articles published on or after this date |
+| `filter[published_to]` | date | Articles published on or before this date |
+
+#### Sorting
+
+| Parameter | Description |
+|---|---|
+| `sort=published_at` | Sort by publish date ascending |
+| `sort=-published_at` | Sort by publish date descending (default) |
+| `sort=title` | Sort by title ascending |
+| `sort=-title` | Sort by title descending |
+
+#### Example Requests
+
+```
+GET /api/news
+GET /api/news?filter[title]=climate&sort=-published_at
+GET /api/news?filter[provider]=NYTimes&filter[category]=sport
+GET /api/news?filter[published_from]=2026-06-01&filter[published_to]=2026-06-25&sort=title
+```
+
+#### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Article title here",
+      "description": "Brief description...",
+      "url": "https://example.com/article",
+      "image": "https://example.com/image.jpg",
+      "source": "The Guardian",
+      "provider": "theGuardian",
+      "category": "Sport",
+      "published_at": "2026-06-24T12:00:00Z"
+    }
+  ],
+  "links": { "first": "...", "last": "...", "prev": null, "next": "..." },
+  "meta": { "current_page": 1, "last_page": 5, "per_page": 15, "total": 72 }
+}
+```
+
+## Architecture
+
+### Design Patterns & SOLID Principles
+
+- **Repository Pattern** — Data access is abstracted behind interfaces (`ArticleRepositoryInterface`, `CategoryRepositoryInterface`), keeping controllers and services decoupled from Eloquent.
+- **Decorator Pattern** — `CachedCategoryRepository` wraps `CategoryRepository` to add a Redis cache layer without modifying the original class (Single Responsibility / Open-Closed).
+- **Provider Pattern** — Each news source implements `NewsProviderInterface`, making it easy to add new sources without modifying existing code (Open-Closed).
+- **Service Layer** — `ArticleService` handles reading from the database. `NewsAggregatorService` orchestrates fetching from external APIs and persisting through repositories (Single Responsibility).
+- **DTO (Data Transfer Object)** — `ArticleDTO` normalizes data from different API response formats into a unified structure before persistence.
+- **Dependency Injection** — All services and repositories are resolved through Laravel's service container via interface bindings (Dependency Inversion).
+
+### Project Structure
+
+```
+app/
+├── Contracts/                           # Interfaces
+│   ├── ArticleRepositoryInterface
+│   ├── CategoryRepositoryInterface
+│   └── NewsProviderInterface
+├── DTOs/
+│   └── ArticleDTO                       # Unified article data structure
+├── Http/
+│   ├── Controllers/
+│   │   └── NewsController               # API endpoints
+│   └── Resources/
+│       └── ArticleResource              # API response transformation
+├── Models/
+│   ├── Article                          # With scopes for filtering
+│   └── Category
+├── Providers/
+│   ├── NewsAggregatorProvider           # Binds news providers via tagging
+│   └── RepositoryServiceProvider        # Binds repository interfaces
+├── Repositories/
+│   ├── ArticleRepository                # Spatie QueryBuilder filtering
+│   ├── CategoryRepository               # Eloquent implementation
+│   └── CachedCategoryRepository         # Redis cache decorator
+└── Services/
+    ├── ArticleService                   # Read articles from DB
+    ├── NewsAggregatorService            # Fetch from APIs + store to DB
+    └── News/
+        ├── NewsApiProvider              # NewsAPI.org integration
+        ├── GuardianApiProvider          # The Guardian integration
+        └── NYTimesApiProvider           # NY Times integration
+```
+
+### Adding a New News Provider
+
+1. Create a new class in `app/Services/News/` implementing `NewsProviderInterface`
+2. Map the API response fields to `ArticleDTO`
+3. Register the provider in `NewsAggregatorProvider`
+4. Add API config to `config/services.php` and `.env.example`
+
+No existing code needs to be modified.
+
+## Tech Stack
+
+- **PHP 8.4** (FPM)
+- **Laravel 13**
+- **Nginx** (reverse proxy)
+- **PostgreSQL 16** (database)
+- **Redis 7** (cache, sessions, queues)
+- **[Spatie Laravel Query Builder](https://spatie.be/docs/laravel-query-builder)** (API filtering & sorting)
+- **[L5-Swagger](https://github.com/DarkaOnLine/L5-Swagger)** (API documentation)
+- **Docker Compose** (containerized development environment)
 
 ## Useful Commands
 
@@ -59,12 +209,10 @@ docker compose exec app php artisan test
 
 # View logs
 docker compose logs -f
+
+# Generate Swagger docs
+docker compose exec app php artisan l5-swagger:generate
+
+# Run any artisan command (requires make)
+make artisan cmd="route:list"
 ```
-
-## Tech Stack
-
-- PHP 8.4 (FPM)
-- Laravel 13
-- Nginx
-- PostgreSQL 16
-- Redis 7
