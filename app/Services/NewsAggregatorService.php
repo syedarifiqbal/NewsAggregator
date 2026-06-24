@@ -15,7 +15,6 @@ class NewsAggregatorService
         private CategroyRepositoryInterface $categoryRepo,
     ) { }
 
-
     function fetchAndStore(string $keyword, int $page = 1): array
     {
         $allArticles = [];

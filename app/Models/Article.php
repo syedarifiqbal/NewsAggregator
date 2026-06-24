@@ -21,3 +21,22 @@ class Article extends Model
     {
         return $this->belongsTo(Category::class);
     }
+
+    public function scopePublishedFrom($query, $date)
+    {
+        return $query->where('published_at', '>=', $date);
+    }
+
+    public function scopePublishedTo($query, $date)
+    {
+        return $query->where('published_at', '<=', $date);
+    }
+
+    public function scopeCategorySearch($query, $value)
+    {
+        return $query->whereHas('category', function ($q) use ($value) {
+            $q->where('slug', 'ILIKE', "%{$value}%");
+        });
+    }
+
+}
