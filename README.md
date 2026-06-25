@@ -1,6 +1,6 @@
 # News Aggregator
 
-A Laravel-based news aggregation application that pulls articles from multiple news providers (NewsAPI, The Guardian, NY Times), stores them in a unified format, and exposes a filterable, paginated REST API.
+A Laravel-based news aggregation application that pulls articles from multiple news providers (NewsAPI, The Guardian, NY Times), stores them in a unified format, and exposes a filterable, paginated REST API. Articles are automatically fetched and updated via a scheduled command.
 
 ## Prerequisites
 
@@ -50,13 +50,23 @@ docker compose up -d     # start
 docker compose down      # stop
 ```
 
+### Fetch Articles
+
+Articles are fetched automatically every hour by the scheduler container. To fetch manually:
+
+```bash
+docker compose exec app php artisan articles:fetch
+```
+
 ## Docker Services
 
-| Service    | Host URL / Port      |
-|------------|----------------------|
-| App (Nginx)| http://localhost:8088 |
-| PostgreSQL | localhost:5442       |
-| Redis      | localhost:6389       |
+| Service   | Description | Host URL / Port |
+|-----------|-------------|-----------------|
+| App       | PHP-FPM application server | — |
+| Nginx     | Reverse proxy | http://localhost:8088 |
+| PostgreSQL| Database | localhost:5442 |
+| Redis     | Cache, sessions, queues | localhost:6389 |
+| Scheduler | Runs `articles:fetch` every hour | — |
 
 Ports are non-default to avoid conflicts with other local projects.
 
@@ -80,10 +90,11 @@ Returns a paginated list of articles with filtering, sorting, and rate limiting 
 
 | Parameter | Type | Description |
 |---|---|---|
-| `filter[title]` | string | Case-insensitive partial match on article title |
+| `filter[search]` | string | Case-insensitive partial match on title and description |
 | `filter[source]` | string | Exact match on source name (e.g. `The Guardian`) |
 | `filter[provider]` | string | Exact match on provider (`NewsAPI`, `theGuardian`, `NYTimes`) |
 | `filter[category]` | string | Case-insensitive partial match on category slug |
+| `filter[author]` | string | Case-insensitive partial match on author name |
 | `filter[published_from]` | date | Articles published on or after this date |
 | `filter[published_to]` | date | Articles published on or before this date |
 
@@ -100,8 +111,9 @@ Returns a paginated list of articles with filtering, sorting, and rate limiting 
 
 ```
 GET /api/news
-GET /api/news?filter[title]=climate&sort=-published_at
+GET /api/news?filter[search]=climate&sort=-published_at
 GET /api/news?filter[provider]=NYTimes&filter[category]=sport
+GET /api/news?filter[author]=barney&filter[source]=The Guardian
 GET /api/news?filter[published_from]=2026-06-01&filter[published_to]=2026-06-25&sort=title
 ```
 
@@ -119,6 +131,7 @@ GET /api/news?filter[published_from]=2026-06-01&filter[published_to]=2026-06-25&
       "source": "The Guardian",
       "provider": "theGuardian",
       "category": "Sport",
+      "author": "Barney Ronay",
       "published_at": "2026-06-24T12:00:00Z"
     }
   ],
@@ -137,17 +150,24 @@ GET /api/news?filter[published_from]=2026-06-01&filter[published_to]=2026-06-25&
 - **Service Layer** — `ArticleService` handles reading from the database. `NewsAggregatorService` orchestrates fetching from external APIs and persisting through repositories (Single Responsibility).
 - **DTO (Data Transfer Object)** — `ArticleDTO` normalizes data from different API response formats into a unified structure before persistence.
 - **Dependency Injection** — All services and repositories are resolved through Laravel's service container via interface bindings (Dependency Inversion).
+- **Circuit Breaker Pattern** — `RedisCircuitBreaker` prevents cascading failures by short-circuiting requests to failing providers after repeated errors, with automatic recovery.
 
 ### Project Structure
 
 ```
 app/
+├── Console/
+│   └── Commands/
+│       └── FetchArticlesCommand         # Artisan command for scheduled fetching
 ├── Contracts/                           # Interfaces
 │   ├── ArticleRepositoryInterface
 │   ├── CategoryRepositoryInterface
+│   ├── CircuitBreakerInterface
 │   └── NewsProviderInterface
 ├── DTOs/
 │   └── ArticleDTO                       # Unified article data structure
+├── Exceptions/
+│   └── CircuitBreakerOpenException
 ├── Http/
 │   ├── Controllers/
 │   │   └── NewsController               # API endpoints
@@ -157,7 +177,7 @@ app/
 │   ├── Article                          # With scopes for filtering
 │   └── Category
 ├── Providers/
-│   ├── NewsAggregatorProvider           # Binds news providers via tagging
+│   ├── NewsAggregatorServiceProvider    # Binds news providers via tagging
 │   └── RepositoryServiceProvider        # Binds repository interfaces
 ├── Repositories/
 │   ├── ArticleRepository                # Spatie QueryBuilder filtering
@@ -166,6 +186,8 @@ app/
 └── Services/
     ├── ArticleService                   # Read articles from DB
     ├── NewsAggregatorService            # Fetch from APIs + store to DB
+    ├── Resilience/
+    │   └── RedisCircuitBreaker          # Circuit breaker implementation
     └── News/
         ├── NewsApiProvider              # NewsAPI.org integration
         ├── GuardianApiProvider          # The Guardian integration
@@ -176,7 +198,7 @@ app/
 
 1. Create a new class in `app/Services/News/` implementing `NewsProviderInterface`
 2. Map the API response fields to `ArticleDTO`
-3. Register the provider in `NewsAggregatorProvider`
+3. Register the provider in `NewsAggregatorServiceProvider`
 4. Add API config to `config/services.php` and `.env.example`
 
 No existing code needs to be modified.
@@ -195,6 +217,9 @@ No existing code needs to be modified.
 ## Useful Commands
 
 ```bash
+# Fetch articles manually
+docker compose exec app php artisan articles:fetch
+
 # Run migrations
 docker compose exec app php artisan migrate
 
@@ -209,6 +234,9 @@ docker compose exec app php artisan test
 
 # View logs
 docker compose logs -f
+
+# View scheduler logs
+docker compose logs -f scheduler
 
 # Generate Swagger docs
 docker compose exec app php artisan l5-swagger:generate

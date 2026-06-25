@@ -50,6 +50,7 @@ class NYTimesApiProvider implements NewsProviderInterface {
                 source: $article['source'] ?? 'The New York Times',
                 publishedAt: $article['pub_date'] ?? '',
                 category: $article['section_name'] ?? null,
+                author: $article['byline']['original'] ?? null,
             ))
             ->all();
     }

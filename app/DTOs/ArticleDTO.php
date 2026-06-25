@@ -11,6 +11,7 @@ class ArticleDTO
         public readonly ?string $image,
         public readonly string $source,
         public readonly string $publishedAt,
-        public readonly ?string $category = null
+        public readonly ?string $category = null,
+        public readonly ?string $author = null
     ) { }
 }

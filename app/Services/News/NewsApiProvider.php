@@ -49,6 +49,7 @@ class NewsApiProvider implements NewsProviderInterface {
                 source: $article['source']['name'] ?? '',
                 publishedAt: $article['publishedAt'] ?? '',
                 category: $article['category'] ?? null,
+                author: $article['author'] ?? null,
             ))
             ->all();
     }

@@ -25,11 +25,12 @@ class GuardianApiProvider implements NewsProviderInterface{
             ->get(
                 $url,
                 [
-                    'page' => $page,
-                    'api-key' => $api_key,
+                    'page'          => $page,
+                    'api-key'       => $api_key,
+                    'show-tags'     => 'contributor',
+                    'show-fields'   => 'thumbnail',
                 ]
             );
-
 
         return collect(
             $response->json('response.results', [])
@@ -38,10 +39,11 @@ class GuardianApiProvider implements NewsProviderInterface{
                 title: $article['webTitle'] ?? '',
                 description: null,
                 url: $article['webUrl'] ?? '',
-                image: null,
+                image: $article['fields']['thumbnail'] ?? null,
                 source: 'The Guardian',
                 publishedAt: $article['webPublicationDate'] ?? '',
                 category: $article['sectionName'] ?? null,
+                author: collect($article['tags'] ?? [])->firstWhere('type', 'contributor')['webTitle'] ?? null,
             ))
             ->all();
     }
