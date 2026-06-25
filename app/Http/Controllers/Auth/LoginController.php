@@ -33,9 +33,6 @@ class LoginController extends Controller
     {
         $token = $this->authService->login($request->validated());
 
-        return response()->json([
-            'message' => 'Login successful.',
-            'token' => $token,
-        ]);
+        return $this->success(['token' => $token], 'Login successful.');
     }
 }

@@ -30,16 +30,14 @@ class UserPreferenceController extends Controller
     {
         $preference = auth()->user()->preference;
 
-        return response()->json([
-            'data' => $preference ? [
-                'preferred_sources' => $preference->preferred_sources ?? [],
-                'preferred_categories' => $preference->preferred_categories ?? [],
-                'preferred_authors' => $preference->preferred_authors ?? [],
-            ] : [
-                'preferred_sources' => [],
-                'preferred_categories' => [],
-                'preferred_authors' => [],
-            ],
+        return $this->success($preference ? [
+            'preferred_sources' => $preference->preferred_sources ?? [],
+            'preferred_categories' => $preference->preferred_categories ?? [],
+            'preferred_authors' => $preference->preferred_authors ?? [],
+        ] : [
+            'preferred_sources' => [],
+            'preferred_categories' => [],
+            'preferred_authors' => [],
         ]);
     }
 
@@ -70,14 +68,11 @@ class UserPreferenceController extends Controller
             $request->validated()
         );
 
-        return response()->json([
-            'message' => 'Preferences updated successfully.',
-            'data' => [
-                'preferred_sources' => $preference->preferred_sources ?? [],
-                'preferred_categories' => $preference->preferred_categories ?? [],
-                'preferred_authors' => $preference->preferred_authors ?? [],
-            ],
-        ]);
+        return $this->success([
+            'preferred_sources' => $preference->preferred_sources ?? [],
+            'preferred_categories' => $preference->preferred_categories ?? [],
+            'preferred_authors' => $preference->preferred_authors ?? [],
+        ], 'Preferences updated successfully.');
     }
 
     #[OA\Get(
