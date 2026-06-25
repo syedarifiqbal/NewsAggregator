@@ -82,11 +82,13 @@ docker compose exec app php artisan l5-swagger:generate
 
 ## API Endpoints
 
-### `GET /api/news`
+### Public
+
+#### `GET /api/news`
 
 Returns a paginated list of articles with filtering, sorting, and rate limiting (60 requests/minute).
 
-#### Filtering
+**Filtering:**
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -98,7 +100,7 @@ Returns a paginated list of articles with filtering, sorting, and rate limiting 
 | `filter[published_from]` | date | Articles published on or after this date |
 | `filter[published_to]` | date | Articles published on or before this date |
 
-#### Sorting
+**Sorting:**
 
 | Parameter | Description |
 |---|---|
@@ -107,7 +109,7 @@ Returns a paginated list of articles with filtering, sorting, and rate limiting 
 | `sort=title` | Sort by title ascending |
 | `sort=-title` | Sort by title descending |
 
-#### Example Requests
+**Example Requests:**
 
 ```
 GET /api/news
@@ -117,7 +119,7 @@ GET /api/news?filter[author]=barney&filter[source]=The Guardian
 GET /api/news?filter[published_from]=2026-06-01&filter[published_to]=2026-06-25&sort=title
 ```
 
-#### Example Response
+**Example Response:**
 
 ```json
 {
@@ -142,7 +144,7 @@ GET /api/news?filter[published_from]=2026-06-01&filter[published_to]=2026-06-25&
 
 ### Authentication
 
-The API uses [Laravel Sanctum](https://laravel.com/docs/sanctum) for token-based authentication. Include the token in the `Authorization` header:
+Token-based authentication via [Laravel Sanctum](https://laravel.com/docs/sanctum). Include the token in the `Authorization` header for protected endpoints:
 
 ```
 Authorization: Bearer <your-token>
@@ -159,6 +161,8 @@ Authorization: Bearer <your-token>
 }
 ```
 
+Returns: `{ "message": "Registration successful.", "data": { "token": "1|abc..." } }`
+
 #### `POST /api/login`
 
 ```json
@@ -168,7 +172,7 @@ Authorization: Bearer <your-token>
 }
 ```
 
-Returns: `{ "message": "Login successful.", "token": "1|abc..." }`
+Returns: `{ "message": "Login successful.", "data": { "token": "1|abc..." } }`
 
 #### `POST /api/logout` (Auth required)
 
@@ -207,13 +211,15 @@ If no preferences are set, returns the default article listing.
 
 ### Design Patterns & SOLID Principles
 
-- **Repository Pattern** — Data access is abstracted behind interfaces (`ArticleRepositoryInterface`, `CategoryRepositoryInterface`), keeping controllers and services decoupled from Eloquent.
+- **Repository Pattern** — Data access is abstracted behind interfaces (`ArticleRepositoryInterface`, `CategoryRepositoryInterface`, `UserRepositoryContract`, `UserPreferenceRepositoryInterface`), keeping services decoupled from Eloquent.
 - **Decorator Pattern** — `CachedCategoryRepository` wraps `CategoryRepository` to add a Redis cache layer without modifying the original class (Single Responsibility / Open-Closed).
 - **Provider Pattern** — Each news source implements `NewsProviderInterface`, making it easy to add new sources without modifying existing code (Open-Closed).
-- **Service Layer** — `ArticleService` handles reading from the database. `NewsAggregatorService` orchestrates fetching from external APIs and persisting through repositories (Single Responsibility).
+- **Service Layer** — Business logic is separated into dedicated services: `AuthService` (authentication), `ArticleService` (article queries), `UserPreferenceService` (preferences + personalized feed), `NewsAggregatorService` (fetch + store from APIs). Controllers remain thin (Single Responsibility).
 - **DTO (Data Transfer Object)** — `ArticleDTO` normalizes data from different API response formats into a unified structure before persistence.
 - **Dependency Injection** — All services and repositories are resolved through Laravel's service container via interface bindings (Dependency Inversion).
 - **Circuit Breaker Pattern** — `RedisCircuitBreaker` prevents cascading failures by short-circuiting requests to failing providers after repeated errors, with automatic recovery.
+- **Single-Action Controllers** — Auth controllers (`RegisterController`, `LoginController`, `LogoutController`) each handle one action via `__invoke()` (Single Responsibility).
+- **Reusable API Response** — `ApiResponse` trait provides consistent `success()` and `error()` response formatting across all controllers.
 
 ### Project Structure
 
@@ -221,45 +227,61 @@ If no preferences are set, returns the default article listing.
 app/
 ├── Console/
 │   └── Commands/
-│       └── FetchArticlesCommand         # Artisan command for scheduled fetching
-├── Contracts/                           # Interfaces
+│       └── FetchArticlesCommand           # Artisan command for scheduled fetching
+├── Contracts/                             # Interfaces
 │   ├── ArticleRepositoryInterface
 │   ├── CategoryRepositoryInterface
 │   ├── CircuitBreakerInterface
-│   └── NewsProviderInterface
+│   ├── NewsProviderInterface
+│   ├── UserPreferenceRepositoryInterface
+│   └── UserRepositoryContract
 ├── DTOs/
-│   └── ArticleDTO                       # Unified article data structure
+│   └── ArticleDTO                         # Unified article data structure
 ├── Exceptions/
 │   └── CircuitBreakerOpenException
 ├── Http/
 │   ├── Controllers/
-│   │   ├── AuthController               # Register, login, logout
-│   │   ├── NewsController               # Public article listing
-│   │   └── UserPreferenceController     # Preferences + personalized feed
+│   │   ├── Auth/
+│   │   │   ├── RegisterController         # Single-action: user registration
+│   │   │   ├── LoginController            # Single-action: user login
+│   │   │   └── LogoutController           # Single-action: token revocation
+│   │   ├── NewsController                 # Public article listing
+│   │   └── UserPreferenceController       # Preferences + personalized feed
+│   ├── Middleware/
+│   │   └── ForceJsonResponse              # Forces JSON Accept header on API routes
 │   ├── Requests/
-│   │   └── UpdatePreferenceRequest      # Preference validation
+│   │   ├── RegisterRequest                # Registration validation
+│   │   ├── LoginRequest                   # Login validation
+│   │   └── UpdatePreferenceRequest        # Preference validation
 │   └── Resources/
-│       └── ArticleResource              # API response transformation
+│       └── ArticleResource                # API response transformation
 ├── Models/
-│   ├── Article                          # With scopes for filtering
+│   ├── Article                            # With scopes for filtering
 │   ├── Category
-│   └── UserPreference                   # JSON preferences per user
+│   ├── User                               # Sanctum tokens + preference relationship
+│   └── UserPreference                     # JSON preferences per user
 ├── Providers/
-│   ├── NewsAggregatorServiceProvider    # Binds news providers via tagging
-│   └── RepositoryServiceProvider        # Binds repository interfaces
+│   ├── NewsAggregatorServiceProvider      # Binds news providers via tagging
+│   └── RepositoryServiceProvider          # Binds all repository interfaces
 ├── Repositories/
-│   ├── ArticleRepository                # Spatie QueryBuilder filtering
-│   ├── CategoryRepository               # Eloquent implementation
-│   └── CachedCategoryRepository         # Redis cache decorator
-└── Services/
-    ├── ArticleService                   # Read articles from DB
-    ├── NewsAggregatorService            # Fetch from APIs + store to DB
-    ├── Resilience/
-    │   └── RedisCircuitBreaker          # Circuit breaker implementation
-    └── News/
-        ├── NewsApiProvider              # NewsAPI.org integration
-        ├── GuardianApiProvider          # The Guardian integration
-        └── NYTimesApiProvider           # NY Times integration
+│   ├── ArticleRepository                  # Spatie QueryBuilder filtering
+│   ├── CategoryRepository                 # Eloquent implementation
+│   ├── CachedCategoryRepository           # Redis cache decorator
+│   ├── UserRepository                     # User data access
+│   └── UserPreferenceRepository           # Preference data access
+├── Services/
+│   ├── ArticleService                     # Read articles from DB
+│   ├── AuthService                        # Register, login logic
+│   ├── UserPreferenceService              # Preferences + personalized feed
+│   ├── NewsAggregatorService              # Fetch from APIs + store to DB
+│   ├── Resilience/
+│   │   └── RedisCircuitBreaker            # Circuit breaker implementation
+│   └── News/
+│       ├── NewsApiProvider                # NewsAPI.org integration
+│       ├── GuardianApiProvider            # The Guardian integration
+│       └── NYTimesApiProvider             # NY Times integration
+└── Traits/
+    └── ApiResponse                        # Consistent JSON response formatting
 ```
 
 ### Adding a New News Provider
