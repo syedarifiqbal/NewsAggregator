@@ -2,13 +2,17 @@
     "openapi": "3.0.0",
     "info": {
         "title": "News Aggregator API",
+        "description": "A news aggregation API that pulls articles from multiple providers and serves them with filtering, sorting, and personalized feeds.",
         "version": "1.0.0"
     },
     "paths": {
         "/api/register": {
             "post": {
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Register a new user",
-                "operationId": "8a56853624e025573120a09a4c75d468",
+                "operationId": "fb50936b77820c848e440341824401c8",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -58,8 +62,11 @@
         },
         "/api/login": {
             "post": {
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Login and get API token",
-                "operationId": "a3b306d14572d1f4bd6c064b3233e7b8",
+                "operationId": "d015f6348abb3341668f30861fee5031",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -98,8 +105,11 @@
         },
         "/api/logout": {
             "post": {
+                "tags": [
+                    "Authentication"
+                ],
                 "summary": "Logout and revoke current token",
-                "operationId": "fe8f3429cd6979b3b4517e186505f9f9",
+                "operationId": "1d338396554f20215fbe83deea53134e",
                 "responses": {
                     "200": {
                         "description": "Logged out successfully"
@@ -117,8 +127,11 @@
         },
         "/api/news": {
             "get": {
+                "tags": [
+                    "News"
+                ],
                 "summary": "List articles",
-                "operationId": "9bfe744cf19dcb58e9ab9677c29ee6c7",
+                "operationId": "b5fccc8adc3cd951f97b9896f010020a",
                 "parameters": [
                     {
                         "name": "filter[search]",
@@ -132,6 +145,7 @@
                     {
                         "name": "filter[source]",
                         "in": "query",
+                        "description": "Exact match on source name",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -140,14 +154,21 @@
                     {
                         "name": "filter[provider]",
                         "in": "query",
+                        "description": "Exact match on provider",
                         "required": false,
                         "schema": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                                "NewsAPI",
+                                "theGuardian",
+                                "NYTimes"
+                            ]
                         }
                     },
                     {
                         "name": "filter[category]",
                         "in": "query",
+                        "description": "Partial match on category slug",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -156,6 +177,7 @@
                     {
                         "name": "filter[author]",
                         "in": "query",
+                        "description": "Partial match on author name",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -164,6 +186,7 @@
                     {
                         "name": "filter[published_from]",
                         "in": "query",
+                        "description": "Articles from this date",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -173,6 +196,7 @@
                     {
                         "name": "filter[published_to]",
                         "in": "query",
+                        "description": "Articles until this date",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -182,6 +206,7 @@
                     {
                         "name": "sort",
                         "in": "query",
+                        "description": "Sort field (prefix with - for descending)",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -203,8 +228,11 @@
         },
         "/api/user/preferences": {
             "get": {
+                "tags": [
+                    "User Preferences"
+                ],
                 "summary": "Get current user preferences",
-                "operationId": "b9e662271a19e3c25c2b6bcdf8ff231d",
+                "operationId": "76c7fb6a688b9a6def11c5acfaa6d8c3",
                 "responses": {
                     "200": {
                         "description": "User preferences"
@@ -220,8 +248,11 @@
                 ]
             },
             "put": {
+                "tags": [
+                    "User Preferences"
+                ],
                 "summary": "Update user preferences",
-                "operationId": "1cbe16908c709917bb63982d2756d434",
+                "operationId": "7ac798e0833fe0c501b90a7eb26ebb64",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -247,7 +278,7 @@
                                         "items": {
                                             "type": "string"
                                         },
-                                        "example": "[\"Barney Ronay\"]"
+                                        "example": "[\"Taha Hashim\"]"
                                     }
                                 },
                                 "type": "object"
@@ -275,8 +306,11 @@
         },
         "/api/user/feed": {
             "get": {
+                "tags": [
+                    "User Preferences"
+                ],
                 "summary": "Get personalized article feed based on user preferences",
-                "operationId": "01cdf9f4b268e5c5924a0c208ababee8",
+                "operationId": "a5dea787b9d1a3658b910b92bbdeab54",
                 "parameters": [
                     {
                         "name": "filter[search]",
@@ -343,5 +377,19 @@
                 "scheme": "bearer"
             }
         }
-    }
+    },
+    "tags": [
+        {
+            "name": "Authentication",
+            "description": "Authentication"
+        },
+        {
+            "name": "News",
+            "description": "News"
+        },
+        {
+            "name": "User Preferences",
+            "description": "User Preferences"
+        }
+    ]
 }
