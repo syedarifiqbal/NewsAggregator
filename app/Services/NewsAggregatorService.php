@@ -17,7 +17,7 @@ class NewsAggregatorService
         private CategroyRepositoryInterface $categoryRepo,
     ) { }
 
-    function fetchAndStore(string $keyword, int $page = 1): array
+    function fetchAndStore(string $keyword = 'tech', int $page = 1): array
     {
         $articles = $this->fetchAll($keyword, $page);
 
