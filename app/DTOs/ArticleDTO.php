@@ -1,7 +1,12 @@
-<?php 
+<?php
 
 namespace App\DTOs;
 
+/**
+ * Unified data structure for articles across all news providers.
+ * Each provider maps its own API response format into this DTO
+ * before the article is persisted to the database.
+ */
 class ArticleDTO
 {
     public function __construct(
@@ -13,5 +18,5 @@ class ArticleDTO
         public readonly string $publishedAt,
         public readonly ?string $category = null,
         public readonly ?string $author = null
-    ) { }
+    ) {}
 }

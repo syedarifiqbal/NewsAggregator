@@ -6,7 +6,7 @@ use App\DTOs\ArticleDTO;
 use App\Models\Article;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-interface ArticleRepositoryInterface
+interface ArticleRepositoryContract
 {
     public function index(): LengthAwarePaginator;
     public function personalizedFeed(array $preferences): LengthAwarePaginator;

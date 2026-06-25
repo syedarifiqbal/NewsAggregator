@@ -12,7 +12,7 @@ class RepositoryServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(
-            \App\Contracts\ArticleRepositoryInterface::class,
+            \App\Contracts\ArticleRepositoryContract::class,
             \App\Repositories\ArticleRepository::class
         );
 
@@ -22,12 +22,12 @@ class RepositoryServiceProvider extends ServiceProvider
         );
 
         $this->app->bind(
-            \App\Contracts\UserPreferenceRepositoryInterface::class,
+            \App\Contracts\UserPreferenceRepositoryContract::class,
             \App\Repositories\UserPreferenceRepository::class
         );
 
         $this->app->bind(
-            \App\Contracts\CategroyRepositoryInterface::class,
+            \App\Contracts\CategroyRepositoryContract::class,
             function ($app) {
                 return new \App\Repositories\CachedCategoryRepository(
                     $app->make(\App\Repositories\CategoryRepository::class)

@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
-use App\Contracts\ArticleRepositoryInterface;
+use App\Contracts\ArticleRepositoryContract;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ArticleService
 {
-    public function __construct(private ArticleRepositoryInterface $articleRepo) {}
+    public function __construct(private ArticleRepositoryContract $articleRepo) {}
 
     function index(): LengthAwarePaginator
     {

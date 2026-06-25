@@ -2,16 +2,15 @@
 
 namespace App\Services;
 
-use App\Contracts\ArticleRepositoryInterface;
-use App\Contracts\UserPreferenceRepositoryInterface;
-use App\Models\UserPreference;
+use App\Contracts\ArticleRepositoryContract;
+use App\Contracts\UserPreferenceRepositoryContract;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserPreferenceService
 {
     public function __construct(
-        private UserPreferenceRepositoryInterface $preferenceRepo,
-        private ArticleRepositoryInterface $articleRepo,
+        private UserPreferenceRepositoryContract $preferenceRepo,
+        private ArticleRepositoryContract $articleRepo,
     ) {}
 
     public function getPreferences(int $userId): array

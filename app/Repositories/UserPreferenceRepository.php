@@ -2,10 +2,10 @@
 
 namespace App\Repositories;
 
-use App\Contracts\UserPreferenceRepositoryInterface;
+use App\Contracts\UserPreferenceRepositoryContract;
 use App\Models\UserPreference;
 
-class UserPreferenceRepository implements UserPreferenceRepositoryInterface
+class UserPreferenceRepository implements UserPreferenceRepositoryContract
 {
     public function __construct(private UserPreference $model) {}
 

@@ -2,12 +2,12 @@
 
 namespace App\Services\News;
 
-use App\Contracts\NewsProviderInterface;
+use App\Contracts\NewsProviderContract;
 use App\DTOs\ArticleDTO;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class GuardianApiProvider implements NewsProviderInterface{
+class GuardianApiProvider implements NewsProviderContract{
     public function name(): string
     {
         return 'theGuardian';
