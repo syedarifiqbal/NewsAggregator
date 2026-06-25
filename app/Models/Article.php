@@ -15,6 +15,7 @@ class Article extends Model
         'provider',
         'category_id',
         'published_at',
+        'author',
     ];
 
     public function category()
@@ -25,6 +26,14 @@ class Article extends Model
     public function scopePublishedFrom($query, $date)
     {
         return $query->where('published_at', '>=', $date);
+    }
+
+    public function scopeTitleSearch($query, $value)
+    {
+        return $query->where(function ($q) use ($value) {
+            $q->where('title', 'ILIKE', "%{$value}%")
+              ->orWhere('description', 'ILIKE', "%{$value}%");
+        });
     }
 
     public function scopePublishedTo($query, $date)

@@ -17,12 +17,13 @@ class ArticleRepository implements ArticleRepositoryInterface
     {
         return QueryBuilder::for(Article::class)
             ->allowedFilters(
-                AllowedFilter::scope('title', 'titleSearch'),
+                AllowedFilter::scope('search', 'titleSearch'),
                 AllowedFilter::exact('source'),
                 AllowedFilter::exact('provider'),
                 AllowedFilter::scope('category', 'categorySearch'),
                 AllowedFilter::scope('published_from'),
                 AllowedFilter::scope('published_to'),
+                AllowedFilter::scope('author', 'authorSearch'),
             )
             ->allowedSorts('published_at', 'title')
             ->defaultSort('-published_at')
@@ -44,6 +45,7 @@ class ArticleRepository implements ArticleRepositoryInterface
                 'provider' => $provider,
                 'category_id' => $categoryId,
                 'published_at' => $dto->publishedAt,
+                'author' => $dto->author,
             ]
         );
     }

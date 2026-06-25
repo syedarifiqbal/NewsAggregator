@@ -23,6 +23,7 @@ class ArticleResource extends JsonResource
             'source' => $this->source,
             'provider' => $this->provider,
             'category' => $this->category ? $this->category->name : null,
+            'author' => $this->author,
             'published_at' => $this->published_at,
         ];
     }
