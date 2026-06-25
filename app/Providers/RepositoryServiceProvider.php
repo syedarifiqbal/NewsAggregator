@@ -22,6 +22,11 @@ class RepositoryServiceProvider extends ServiceProvider
         );
 
         $this->app->bind(
+            \App\Contracts\UserPreferenceRepositoryInterface::class,
+            \App\Repositories\UserPreferenceRepository::class
+        );
+
+        $this->app->bind(
             \App\Contracts\CategroyRepositoryInterface::class,
             function ($app) {
                 return new \App\Repositories\CachedCategoryRepository(

@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdatePreferenceRequest;
 use App\Http\Resources\ArticleResource;
-use App\Services\ArticleService;
+use App\Services\UserPreferenceService;
+use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
 #[OA\SecurityScheme(
@@ -15,7 +16,7 @@ use OpenApi\Attributes as OA;
 )]
 class UserPreferenceController extends Controller
 {
-    public function __construct(private ArticleService $articleService) {}
+    public function __construct(private UserPreferenceService $preferenceService) {}
 
     #[OA\Get(
         path: '/api/user/preferences',
@@ -26,19 +27,10 @@ class UserPreferenceController extends Controller
             new OA\Response(response: 401, description: 'Unauthenticated'),
         ]
     )]
-    public function show()
+    public function show(Request $request)
     {
-        $preference = auth()->user()->preference;
-
-        return $this->success($preference ? [
-            'preferred_sources' => $preference->preferred_sources ?? [],
-            'preferred_categories' => $preference->preferred_categories ?? [],
-            'preferred_authors' => $preference->preferred_authors ?? [],
-        ] : [
-            'preferred_sources' => [],
-            'preferred_categories' => [],
-            'preferred_authors' => [],
-        ]);
+        $preferences = $this->preferenceService->getPreferences($request->user()->id);
+        return $this->success($preferences);
     }
 
     #[OA\Put(
@@ -63,16 +55,12 @@ class UserPreferenceController extends Controller
     )]
     public function update(UpdatePreferenceRequest $request)
     {
-        $preference = auth()->user()->preference()->updateOrCreate(
-            ['user_id' => auth()->id()],
+        $data = $this->preferenceService->updatePreferences(
+            $request->user()->id,
             $request->validated()
         );
 
-        return $this->success([
-            'preferred_sources' => $preference->preferred_sources ?? [],
-            'preferred_categories' => $preference->preferred_categories ?? [],
-            'preferred_authors' => $preference->preferred_authors ?? [],
-        ], 'Preferences updated successfully.');
+        return $this->success($data, 'Preferences updated successfully.');
     }
 
     #[OA\Get(
@@ -90,16 +78,9 @@ class UserPreferenceController extends Controller
             new OA\Response(response: 401, description: 'Unauthenticated'),
         ]
     )]
-    public function feed()
+    public function feed(Request $request)
     {
-        $preference = auth()->user()->preference;
-
-        if (!$preference) {
-            return ArticleResource::collection($this->articleService->index());
-        }
-
-        return ArticleResource::collection(
-            $this->articleService->personalizedFeed($preference->toArray())
-        );
+        $feeds = $this->preferenceService->personalizedFeed($request->user()->id);
+        return ArticleResource::collection($feeds);
     }
 }
