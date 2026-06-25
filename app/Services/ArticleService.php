@@ -13,4 +13,9 @@ class ArticleService
     {
         return $this->articleRepo->index();
     }
+
+    function personalizedFeed(array $preferences): LengthAwarePaginator
+    {
+        return $this->articleRepo->personalizedFeed($preferences);
+    }
 }

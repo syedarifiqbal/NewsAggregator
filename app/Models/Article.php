@@ -48,4 +48,29 @@ class Article extends Model
         });
     }
 
+    public function scopeAuthorSearch($query, $value)
+    {
+        return $query->where('author', 'ILIKE', "%{$value}%");
+    }
+
+    public function scopeForPreferences($query, array $preferences)
+    {
+        return $query->where(function ($q) use ($preferences) {
+            if (!empty($preferences['preferred_sources'])) {
+                $q->orWhereIn('source', $preferences['preferred_sources']);
+            }
+            if (!empty($preferences['preferred_categories'])) {
+                $q->orWhereHas('category', function ($cq) use ($preferences) {
+                    $cq->whereIn('slug', $preferences['preferred_categories']);
+                });
+            }
+            if (!empty($preferences['preferred_authors'])) {
+                $q->orWhere(function ($aq) use ($preferences) {
+                    foreach ($preferences['preferred_authors'] as $author) {
+                        $aq->orWhere('author', 'ILIKE', "%{$author}%");
+                    }
+                });
+            }
+        });
+    }
 }
