@@ -140,6 +140,69 @@ GET /api/news?filter[published_from]=2026-06-01&filter[published_to]=2026-06-25&
 }
 ```
 
+### Authentication
+
+The API uses [Laravel Sanctum](https://laravel.com/docs/sanctum) for token-based authentication. Include the token in the `Authorization` header:
+
+```
+Authorization: Bearer <your-token>
+```
+
+#### `POST /api/register`
+
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+```
+
+#### `POST /api/login`
+
+```json
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+Returns: `{ "message": "Login successful.", "token": "1|abc..." }`
+
+#### `POST /api/logout` (Auth required)
+
+Revokes the current API token.
+
+### User Preferences (Auth required)
+
+#### `GET /api/user/preferences`
+
+Returns the authenticated user's saved preferences.
+
+#### `PUT /api/user/preferences`
+
+Save or update preferred sources, categories, and authors.
+
+```json
+{
+  "preferred_sources": ["The Guardian", "The New York Times"],
+  "preferred_categories": ["sport", "technology"],
+  "preferred_authors": ["Barney Ronay"]
+}
+```
+
+#### `GET /api/user/feed`
+
+Returns a personalized article feed filtered by the user's saved preferences. Supports additional filtering and sorting:
+
+```
+GET /api/user/feed?filter[search]=climate&sort=-published_at
+GET /api/user/feed?filter[published_from]=2026-06-20
+```
+
+If no preferences are set, returns the default article listing.
+
 ## Architecture
 
 ### Design Patterns & SOLID Principles
@@ -170,12 +233,17 @@ app/
 │   └── CircuitBreakerOpenException
 ├── Http/
 │   ├── Controllers/
-│   │   └── NewsController               # API endpoints
+│   │   ├── AuthController               # Register, login, logout
+│   │   ├── NewsController               # Public article listing
+│   │   └── UserPreferenceController     # Preferences + personalized feed
+│   ├── Requests/
+│   │   └── UpdatePreferenceRequest      # Preference validation
 │   └── Resources/
 │       └── ArticleResource              # API response transformation
 ├── Models/
 │   ├── Article                          # With scopes for filtering
-│   └── Category
+│   ├── Category
+│   └── UserPreference                   # JSON preferences per user
 ├── Providers/
 │   ├── NewsAggregatorServiceProvider    # Binds news providers via tagging
 │   └── RepositoryServiceProvider        # Binds repository interfaces
@@ -210,6 +278,7 @@ No existing code needs to be modified.
 - **Nginx** (reverse proxy)
 - **PostgreSQL 16** (database)
 - **Redis 7** (cache, sessions, queues)
+- **[Laravel Sanctum](https://laravel.com/docs/sanctum)** (API token authentication)
 - **[Spatie Laravel Query Builder](https://spatie.be/docs/laravel-query-builder)** (API filtering & sorting)
 - **[L5-Swagger](https://github.com/DarkaOnLine/L5-Swagger)** (API documentation)
 - **Docker Compose** (containerized development environment)

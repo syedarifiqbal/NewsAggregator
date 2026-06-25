@@ -31,6 +31,22 @@ class ArticleRepository implements ArticleRepositoryInterface
             ->paginate();
     }
 
+    public function personalizedFeed(array $preferences): LengthAwarePaginator
+    {
+        return QueryBuilder::for(
+                Article::query()->forPreferences($preferences)
+            )
+            ->allowedFilters(
+                AllowedFilter::scope('search', 'titleSearch'),
+                AllowedFilter::scope('published_from'),
+                AllowedFilter::scope('published_to'),
+            )
+            ->allowedSorts('published_at', 'title')
+            ->defaultSort('-published_at')
+            ->with('category:id,name')
+            ->paginate();
+    }
+
     public function updateOrCreate(ArticleDTO $dto, string $provider, ?int $categoryId): Article
     {
         return $this->model->updateOrCreate(

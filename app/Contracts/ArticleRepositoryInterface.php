@@ -9,5 +9,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 interface ArticleRepositoryInterface
 {
     public function index(): LengthAwarePaginator;
+    public function personalizedFeed(array $preferences): LengthAwarePaginator;
     public function updateOrCreate(ArticleDTO $dto, string $provider, ?int $categoryId): Article;
 }
