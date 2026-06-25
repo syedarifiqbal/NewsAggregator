@@ -2,10 +2,15 @@
 
 namespace App\Repositories;
 
-use App\Contracts\CategroyRepositoryInterface;
+use App\Contracts\CategroyRepositoryContract;
 use Illuminate\Support\Facades\Cache;
 
-class CachedCategoryRepository implements CategroyRepositoryInterface
+/**
+ * Decorator that wraps CategoryRepository with a Redis cache layer.
+ * Follows the Decorator pattern — same contract, added caching behavior.
+ * Cache is only busted when a new category is actually created.
+ */
+class CachedCategoryRepository implements CategroyRepositoryContract
 {
     public function __construct(
         private CategoryRepository $repository,
@@ -30,10 +35,11 @@ class CachedCategoryRepository implements CategroyRepositoryInterface
     public function firstOrCreate($attributes)
     {
         $result = $this->repository->firstOrCreate($attributes);
-        // check if it is created and if so, clear the cache for all categories
+
         if ($result->wasRecentlyCreated) {
             Cache::forget('categories:all');
         }
+
         return $result;
     }
 }

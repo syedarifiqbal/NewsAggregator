@@ -2,14 +2,14 @@
 
 namespace App\Repositories;
 
-use App\Contracts\ArticleRepositoryInterface;
+use App\Contracts\ArticleRepositoryContract;
 use App\DTOs\ArticleDTO;
 use App\Models\Article;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
-class ArticleRepository implements ArticleRepositoryInterface
+class ArticleRepository implements ArticleRepositoryContract
 {
     public function __construct(private Article $model) {}
 

@@ -2,10 +2,10 @@
 
 namespace App\Repositories;
 
-use App\Contracts\CategroyRepositoryInterface;
+use App\Contracts\CategroyRepositoryContract;
 use App\Models\Category;
 
-class CategoryRepository implements CategroyRepositoryInterface
+class CategoryRepository implements CategroyRepositoryContract
 {
     public function __construct(private Category $model, private int $ttl = 3600) { }
 

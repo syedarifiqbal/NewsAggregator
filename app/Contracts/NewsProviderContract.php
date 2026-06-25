@@ -2,7 +2,7 @@
 
 namespace App\Contracts;
 
-interface NewsProviderInterface
+interface NewsProviderContract
 {
     public function name(): string;
 

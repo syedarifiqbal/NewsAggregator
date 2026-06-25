@@ -4,7 +4,7 @@ namespace App\Contracts;
 
 use App\Models\UserPreference;
 
-interface UserPreferenceRepositoryInterface
+interface UserPreferenceRepositoryContract
 {
     public function findByUserId(int $userId): ?UserPreference;
     public function updateOrCreate(int $userId, array $data): UserPreference;

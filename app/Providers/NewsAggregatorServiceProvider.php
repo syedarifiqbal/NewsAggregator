@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Contracts\NewsProviderInterface;
+use App\Contracts\NewsProviderContract;
 use App\Services\News\GuardianApiProvider;
 use App\Services\News\NewsApiProvider;
 use App\Services\News\NYTimesApiProvider;
@@ -20,13 +20,13 @@ class NewsAggregatorServiceProvider extends ServiceProvider
             NewsApiProvider::class,
             GuardianApiProvider::class,
             NYTimesApiProvider::class,
-        ], NewsProviderInterface::class);
+        ], NewsProviderContract::class);
 
         $this->app->singleton(NewsAggregatorService::class, function ($app) {
             return new NewsAggregatorService(
-                $app->tagged(NewsProviderInterface::class),
-                $app->make(\App\Contracts\ArticleRepositoryInterface::class),
-                $app->make(\App\Contracts\CategroyRepositoryInterface::class),
+                $app->tagged(NewsProviderContract::class),
+                $app->make(\App\Contracts\ArticleRepositoryContract::class),
+                $app->make(\App\Contracts\CategroyRepositoryContract::class),
             );
         });
     }

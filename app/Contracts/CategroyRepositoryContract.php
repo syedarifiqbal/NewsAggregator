@@ -2,7 +2,7 @@
 
 namespace App\Contracts;
 
-interface CategroyRepositoryInterface
+interface CategroyRepositoryContract
 {
     public function all();
     public function find($id);

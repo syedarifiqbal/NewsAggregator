@@ -2,12 +2,11 @@
 
 namespace App\Services\News;
 
-use App\Contracts\NewsProviderInterface;
+use App\Contracts\NewsProviderContract;
 use App\DTOs\ArticleDTO;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
-class NewsApiProvider implements NewsProviderInterface {
+class NewsApiProvider implements NewsProviderContract {
     
     public function name(): string
     {
