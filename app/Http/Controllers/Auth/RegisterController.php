@@ -35,9 +35,6 @@ class RegisterController extends Controller
     {
         $token = $this->authService->register($request->validated());
 
-        return response()->json([
-            'message' => 'Registration successful.',
-            'token' => $token,
-        ], 201);
+        return $this->success(['token' => $token], 'Registration successful.', 201);
     }
 }
