@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Contracts\ArticleRepositoryInterface;
 use App\Contracts\CategroyRepositoryInterface;
+use App\Exceptions\CircuitBreakerOpenException;
+use App\Services\Resilience\RedisCircuitBreaker;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -17,42 +19,25 @@ class NewsAggregatorService
 
     function fetchAndStore(string $keyword, int $page = 1): array
     {
-        $allArticles = [];
+        $articles = $this->fetchAll($keyword, $page);
 
-        foreach ($this->providers as $provider) {
-            try {
-                $articles = $provider->fetch($keyword, $page);
+        foreach ($articles as $item) {
+            $dto = $item['article'];
+            $category = $dto->category
+                ? $this->categoryRepo->firstOrCreate([
+                    'name' => $dto->category,
+                    'slug' => Str::slug($dto->category),
+                ])
+                : null;
 
-                foreach ($articles as $dto) {
-                    $category = $dto->category
-                        ? $this->categoryRepo->firstOrCreate([
-                            'name' => $dto->category,
-                            'slug' => Str::slug($dto->category),
-                        ])
-                        : null;
-
-                    $article = $this->articleRepo->updateOrCreate(
-                        $dto,
-                        $provider->name(),
-                        $category?->id
-                    );
-
-                    $allArticles[] = [
-                        'provider' => $provider->name(),
-                        'article' => $article
-                    ];
-                }
-
-            } catch (\Throwable $e) {
-                Log::error('Provider failed', [
-                    'provider' => $provider->name(),
-                    'error' => $e->getMessage()
-                ]);
-                continue;
-            }
+            $this->articleRepo->updateOrCreate(
+                $dto,
+                $item['provider'],
+                $category?->id
+            );
         }
 
-        return $this->normalize($allArticles);
+        return $articles;
     }
 
     protected function fetchAll(string $keyword, int $page = 1): array
@@ -61,7 +46,12 @@ class NewsAggregatorService
 
         foreach ($this->providers as $provider) {
             try {
-                $articles = $provider->fetch($keyword, $page);
+                $breaker = new RedisCircuitBreaker($provider->name());
+
+                $articles = $breaker->execute(
+                    fn () => $provider->fetch($keyword, $page),
+                    fn () => []
+                );
 
                 foreach ($articles as $article) {
                     $allArticles[] = [
@@ -70,6 +60,11 @@ class NewsAggregatorService
                     ];
                 }
 
+            } catch (CircuitBreakerOpenException $e) {
+                Log::warning('Circuit breaker open', [
+                    'provider' => $provider->name(),
+                ]);
+                continue;
             } catch (\Throwable $e) {
                 Log::error('Provider failed', [
                     'provider' => $provider->name(),

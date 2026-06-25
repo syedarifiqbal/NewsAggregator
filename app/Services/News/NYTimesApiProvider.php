@@ -19,25 +19,7 @@ class NYTimesApiProvider implements NewsProviderInterface {
         $url = config('services.nytimesapi.url') . '/search/v2/articlesearch.json';
         $api_key = config('services.nytimesapi.key');
 
-        $response = Http::retry(
-                3,
-                fn ($attempt) => $attempt * 1000,
-                function (\Exception $e) {
-                    
-                    if ($e instanceof \Illuminate\Http\Client\RequestException) {
-                        Log::error('NYTimesAPI request failed', [
-                            'status' => $e->response->status(),
-                            'body' => $e->response->json(),
-                        ]);
-                    } else {
-                        Log::error('NYTimesAPI request failed', [
-                            'message' => $e->getMessage(),
-                        ]);
-                    }
-                    return true;
-                }      
-            )
-            ->connectTimeout(3)
+        $response = Http::connectTimeout(3)
             ->timeout(10)
             ->acceptJson()
             ->get(

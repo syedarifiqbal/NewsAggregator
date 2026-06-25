@@ -15,20 +15,13 @@ class NewsController extends Controller
         path: '/api/news',
         summary: 'List articles',
         parameters: [
-            new OA\Parameter(name: 'filter[title]', in: 'query', required: false, schema: new OA\Schema(type:
-'string')),
-            new OA\Parameter(name: 'filter[source]', in: 'query', required: false, schema: new OA\Schema(type:
-'string')),
-            new OA\Parameter(name: 'filter[provider]', in: 'query', required: false, schema: new OA\Schema(type:
-'string')),
-            new OA\Parameter(name: 'filter[category]', in: 'query', required: false, schema: new OA\Schema(type:
-'string')),
-            new OA\Parameter(name: 'filter[published_from]', in: 'query', required: false, schema: new
-OA\Schema(type: 'string', format: 'date')),
-            new OA\Parameter(name: 'filter[published_to]', in: 'query', required: false, schema: new OA\Schema(type:
-'string', format: 'date')),
-            new OA\Parameter(name: 'sort', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: 
-['published_at', '-published_at', 'title', '-title'])),
+            new OA\Parameter(name: 'filter[title]', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'filter[source]', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'filter[provider]', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'filter[category]', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'filter[published_from]', in: 'query', required: false, schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'filter[published_to]', in: 'query', required: false, schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'sort', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['published_at', '-published_at', 'title', '-title'])),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Paginated list of articles'),
