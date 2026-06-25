@@ -19,25 +19,7 @@ class GuardianApiProvider implements NewsProviderInterface{
         $api_key = config('services.guardianapi.key');
 
 
-        $response = Http::retry(
-                3,
-                fn ($attempt) => $attempt * 1000,
-                function (\Exception $e) {
-                    
-                    if ($e instanceof \Illuminate\Http\Client\RequestException) {
-                        Log::error('GuardianAPI request failed', [
-                            'status' => $e->response->status(),
-                            'body' => $e->response->json(),
-                        ]);
-                    } else {
-                        Log::error('GuardianAPI request failed', [
-                            'message' => $e->getMessage(),
-                        ]);
-                    }
-                    return true;
-                }      
-            )
-            ->connectTimeout(3)
+        $response = Http::connectTimeout(3)
             ->timeout(10)
             ->acceptJson()
             ->get(

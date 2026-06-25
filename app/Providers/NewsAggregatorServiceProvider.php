@@ -9,7 +9,7 @@ use App\Services\News\NYTimesApiProvider;
 use App\Services\NewsAggregatorService;
 use Illuminate\Support\ServiceProvider;
 
-class NewsAggregatorProvider extends ServiceProvider
+class NewsAggregatorServiceProvider extends ServiceProvider
 {
     /**
      * Register services.
