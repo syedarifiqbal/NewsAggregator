@@ -211,9 +211,9 @@ If no preferences are set, returns the default article listing.
 
 ### Design Patterns & SOLID Principles
 
-- **Repository Pattern** — Data access is abstracted behind interfaces (`ArticleRepositoryInterface`, `CategoryRepositoryInterface`, `UserRepositoryContract`, `UserPreferenceRepositoryInterface`), keeping services decoupled from Eloquent.
+- **Repository Pattern** — Data access is abstracted behind contracts (`ArticleRepositoryContract`, `CategoryRepositoryContract`, `UserRepositoryContract`, `UserPreferenceRepositoryContract`), keeping services decoupled from Eloquent.
 - **Decorator Pattern** — `CachedCategoryRepository` wraps `CategoryRepository` to add a Redis cache layer without modifying the original class (Single Responsibility / Open-Closed).
-- **Provider Pattern** — Each news source implements `NewsProviderInterface`, making it easy to add new sources without modifying existing code (Open-Closed).
+- **Provider Pattern** — Each news source extends `BaseProvider` (which implements `NewsProviderContract`), making it easy to add new sources without modifying existing code (Open-Closed).
 - **Service Layer** — Business logic is separated into dedicated services: `AuthService` (authentication), `ArticleService` (article queries), `UserPreferenceService` (preferences + personalized feed), `NewsAggregatorService` (fetch + store from APIs). Controllers remain thin (Single Responsibility).
 - **DTO (Data Transfer Object)** — `ArticleDTO` normalizes data from different API response formats into a unified structure before persistence.
 - **Dependency Injection** — All services and repositories are resolved through Laravel's service container via interface bindings (Dependency Inversion).
@@ -228,12 +228,12 @@ app/
 ├── Console/
 │   └── Commands/
 │       └── FetchArticlesCommand           # Artisan command for scheduled fetching
-├── Contracts/                             # Interfaces
-│   ├── ArticleRepositoryInterface
-│   ├── CategoryRepositoryInterface
-│   ├── CircuitBreakerInterface
-│   ├── NewsProviderInterface
-│   ├── UserPreferenceRepositoryInterface
+├── Contracts/                             # Interfaces (named *Contract)
+│   ├── ArticleRepositoryContract
+│   ├── CategoryRepositoryContract
+│   ├── CircuitBreakerContract
+│   ├── NewsProviderContract
+│   ├── UserPreferenceRepositoryContract
 │   └── UserRepositoryContract
 ├── DTOs/
 │   └── ArticleDTO                         # Unified article data structure
@@ -277,17 +277,23 @@ app/
 │   ├── Resilience/
 │   │   └── RedisCircuitBreaker            # Circuit breaker implementation
 │   └── News/
+│       ├── BaseProvider                   # Abstract base: shared HTTP client
 │       ├── NewsApiProvider                # NewsAPI.org integration
 │       ├── GuardianApiProvider            # The Guardian integration
 │       └── NYTimesApiProvider             # NY Times integration
+├── OpenApi/                               # Swagger/OpenAPI annotation classes
+│   ├── AuthDocs
+│   ├── NewsDocs
+│   ├── OpenApiSpec
+│   └── UserPreferenceDocs
 └── Traits/
     └── ApiResponse                        # Consistent JSON response formatting
 ```
 
 ### Adding a New News Provider
 
-1. Create a new class in `app/Services/News/` implementing `NewsProviderInterface`
-2. Map the API response fields to `ArticleDTO`
+1. Create a new class in `app/Services/News/` extending `BaseProvider`
+2. Implement `name()` and `fetch()` from `NewsProviderContract`, mapping the API response to `ArticleDTO`
 3. Register the provider in `NewsAggregatorServiceProvider`
 4. Add API config to `config/services.php` and `.env.example`
 
