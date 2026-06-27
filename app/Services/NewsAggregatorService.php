@@ -57,47 +57,56 @@ class NewsAggregatorService
         return $articles;
     }
 
-    /**
-     * Fetch articles from all providers without persisting.
-     * Each provider is wrapped in a circuit breaker — if a provider
-     * fails 3 times, it's skipped for 30 minutes.
-     */
-    protected function fetchAll(string $keyword, int $page = 1): array
+    protected function fetchAll(string $keyword, int $page = 1, int $maxPages = 5): array
     {
         $allArticles = [];
 
         foreach ($this->providers as $provider) {
-            try {
-                $breaker = new RedisCircuitBreaker($provider->name());
-
-                // Returns [] as fallback if circuit is open
-                $articles = $breaker->execute(
-                    fn () => $provider->fetch($keyword, $page),
-                    fn () => []
-                );
-
-                foreach ($articles as $article) {
-                    $allArticles[] = [
-                        'provider' => $provider->name(),
-                        'article' => $article
-                    ];
-                }
-
-            } catch (CircuitBreakerOpenException $e) {
-                Log::warning('Circuit breaker open', [
-                    'provider' => $provider->name(),
-                ]);
-                continue;
-            } catch (\Throwable $e) {
-                Log::error('Provider failed', [
-                    'provider' => $provider->name(),
-                    'error' => $e->getMessage()
-                ]);
-                continue;
-            }
+            $articles = $this->fetchFromProvider($provider, $keyword, $page, $maxPages);
+            array_push($allArticles, ...$articles);
         }
 
         return $this->normalize($allArticles);
+    }
+
+    /**
+     * Paginate a single provider with circuit-breaker protection.
+     * Stops early on empty page, open circuit, or any provider error.
+     */
+    protected function fetchFromProvider($provider, string $keyword, int $page, int $maxPages): array
+    {
+        $breaker = new RedisCircuitBreaker($provider->name());
+        $articles = [];
+
+        for ($currentPage = $page; $currentPage < $page + $maxPages; $currentPage++) {
+            try {
+                $page_articles = $breaker->execute(
+                    fn () => $provider->fetch($keyword, $currentPage),
+                    fn () => []
+                );
+
+                if (empty($page_articles)) {
+                    break;
+                }
+
+                foreach ($page_articles as $article) {
+                    $articles[] = ['provider' => $provider->name(), 'article' => $article];
+                }
+
+            } catch (CircuitBreakerOpenException $e) {
+                Log::warning('Circuit breaker open', ['provider' => $provider->name()]);
+                break;
+            } catch (\Throwable $e) {
+                Log::error('Provider failed', [
+                    'provider' => $provider->name(),
+                    'page' => $currentPage,
+                    'error' => $e->getMessage(),
+                ]);
+                break;
+            }
+        }
+
+        return $articles;
     }
 
     /**

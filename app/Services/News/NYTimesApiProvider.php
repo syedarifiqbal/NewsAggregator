@@ -2,12 +2,10 @@
 
 namespace App\Services\News;
 
-use App\Contracts\NewsProviderContract;
 use App\DTOs\ArticleDTO;
-use Illuminate\Support\Facades\Http;
 
-class NYTimesApiProvider implements NewsProviderContract {
-    
+class NYTimesApiProvider extends BaseProvider
+{
     public function name(): string
     {
         return 'NYTimes';
@@ -15,30 +13,16 @@ class NYTimesApiProvider implements NewsProviderContract {
 
     public function fetch(string $keyword, int $page = 1): array
     {
-        $url = config('services.nytimesapi.url') . '/search/v2/articlesearch.json';
-        $api_key = config('services.nytimesapi.key');
+        $response = $this->client()->get(
+            config('services.nytimesapi.url') . '/search/v2/articlesearch.json',
+            [
+                'page' => $page - 1,
+                'sortBy' => 'newest',
+                'api-key' => config('services.nytimesapi.key'),
+            ]
+        );
 
-        $response = Http::connectTimeout(3)
-            ->timeout(10)
-            ->acceptJson()
-            ->get(
-                $url,
-                [
-                    /**
-                     * Not sure what keyword to use here, so I will comment it out for now.
-                     * We may store the user's query in the database and use it here to fetch news based on their interests.
-                     */
-                    // 'q' => $keyword,
-                    'page' => $page - 1,
-                    'sortBy' => 'newest',
-                    'api-key' => $api_key,
-                ]
-            );
-
-
-        return collect(
-            $response->json('response.docs', [])
-        )
+        return collect($response->json('response.docs', []))
             ->map(fn ($article) => new ArticleDTO(
                 title: $article['headline']['main'] ?? '',
                 description: $article['abstract'] ?? null,
